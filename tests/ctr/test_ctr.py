@@ -50,7 +50,7 @@ class TestCTR256NIST(unittest.TestCase):
         DFC9C58D B67AADA6 13C2DD08 457941A6
         """.replace(" ", "").replace("\n", ""))
 
-        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, iv, bytes(1)), ciphertext)
+        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, bytearray(iv), bytearray(1)), ciphertext)
 
     def test_ctr256_decrypt(self):
         key = bytes.fromhex("""
@@ -76,7 +76,7 @@ class TestCTR256NIST(unittest.TestCase):
         F69F2445 DF4F9B17 AD2B417B E66C3710
         """.replace(" ", "").replace("\n", ""))
 
-        self.assertEqual(tgcrypto.ctr256_decrypt(ciphertext, key, iv, bytes(1)), plaintext)
+        self.assertEqual(tgcrypto.ctr256_decrypt(ciphertext, key, bytearray(iv), bytearray(1)), plaintext)
 
 
 class TestCTR256Cryptography(unittest.TestCase):
@@ -88,7 +88,7 @@ class TestCTR256Cryptography(unittest.TestCase):
         plaintext = bytes.fromhex("53696E676C6520626C6F636B206D7367")
         ciphertext = bytes.fromhex("145AD01DBF824EC7560863DC71E3E0C0")
 
-        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, iv, bytes(1)), ciphertext)
+        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, bytearray(iv), bytearray(1)), ciphertext)
 
     def test_ctr256_encrypt_extra2(self):
         key = bytes.fromhex("F6D66D6BD52D59BB0796365879EFF886C66DD51A5B6A99744B50590C87A23884")
@@ -96,7 +96,7 @@ class TestCTR256Cryptography(unittest.TestCase):
         plaintext = bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
         ciphertext = bytes.fromhex("F05E231B3894612C49EE000B804EB2A9B8306B508F839D6A5530831D9344AF1C")
 
-        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, iv, bytes(1)), ciphertext)
+        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, bytearray(iv), bytearray(1)), ciphertext)
 
     def test_ctr256_encrypt_extra3(self):
         key = bytes.fromhex("FF7A617CE69148E4F1726E2F43581DE2AA62D9F805532EDFF1EED687FB54153D")
@@ -104,7 +104,7 @@ class TestCTR256Cryptography(unittest.TestCase):
         plaintext = bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F20212223")
         ciphertext = bytes.fromhex("EB6C52821D0BBBF7CE7594462ACA4FAAB407DF866569FD07F48CC0B583D6071F1EC0E6B8")
 
-        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, iv, bytes(1)), ciphertext)
+        self.assertEqual(tgcrypto.ctr256_encrypt(plaintext, key, bytearray(iv), bytearray(1)), ciphertext)
 
 
 class TestCTR256Input(unittest.TestCase):

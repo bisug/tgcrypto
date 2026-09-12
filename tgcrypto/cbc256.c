@@ -27,6 +27,9 @@ uint8_t *cbc256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j;
 
+    if (out == NULL)
+        return NULL;
+
     memcpy(out, in, length);
 
 #if TGCRYPTO_AESNI

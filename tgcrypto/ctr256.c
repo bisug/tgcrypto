@@ -29,6 +29,9 @@ uint8_t *ctr256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j, k;
 
+    if (out == NULL)
+        return NULL;
+
     memcpy(out, in, length);
     aes256_set_encryption_key(key, expandedKey);
 

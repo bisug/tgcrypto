@@ -77,12 +77,19 @@ TgCrypto API consists of these six methods:
 def ige256_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes: ...
 def ige256_decrypt(data: bytes, key: bytes, iv: bytes) -> bytes: ...
 
-def ctr256_encrypt(data: bytes, key: bytes, iv: bytes, state: bytes) -> bytes: ...
-def ctr256_decrypt(data: bytes, key: bytes, iv: bytes, state: bytes) -> bytes: ...
+def ctr256_encrypt(data: bytes, key: bytes, iv: bytearray, state: bytearray) -> bytes: ...
+def ctr256_decrypt(data: bytes, key: bytes, iv: bytearray, state: bytearray) -> bytes: ...
 
-def cbc256_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes: ...
-def cbc256_decrypt(data: bytes, key: bytes, iv: bytes) -> bytes: ...
+def cbc256_encrypt(data: bytes, key: bytes, iv: bytearray) -> bytes: ...
+def cbc256_decrypt(data: bytes, key: bytes, iv: bytearray) -> bytes: ...
 ```
+
+> **Buffer semantics (MTProto streaming):** `ige256_*` copies the 32-byte IV
+> into local state, so read-only `bytes` are fine. `ctr256_*` mutates the
+> 16-byte counter `iv` and the 1-byte `state` in place, and `cbc256_*` mutates
+> the 16-byte `iv` to the last block — so those must be **writable**
+> (`bytearray`/`memoryview`). Immutable `bytes` there raises `BufferError`
+> instead of corrupting memory. Don't share one `iv`/`state` across threads.
 
 ## Usage
 
@@ -122,8 +129,8 @@ key = os.urandom(32)  # Random Key
 enc_iv = bytearray(os.urandom(16))  # Random IV
 dec_iv = enc_iv.copy()  # Keep a copy for decryption
 
-ctr_encrypted = tgcrypto.ctr256_encrypt(data, key, enc_iv, bytes(1))
-ctr_decrypted = tgcrypto.ctr256_decrypt(ctr_encrypted, key, dec_iv, bytes(1))
+ctr_encrypted = tgcrypto.ctr256_encrypt(data, key, enc_iv, bytearray(1))
+ctr_decrypted = tgcrypto.ctr256_decrypt(ctr_encrypted, key, dec_iv, bytearray(1))
 
 print(data == ctr_decrypted)  # True
 ```
@@ -143,8 +150,8 @@ key = os.urandom(32)  # Random Key
 enc_iv = bytearray(os.urandom(16))  # Random IV
 dec_iv = enc_iv.copy()  # Keep a copy for decryption
 
-enc_state = bytes(1)  # Encryption state, starts from 0
-dec_state = bytes(1)  # Decryption state, starts from 0
+enc_state = bytearray(1)  # Encryption state, starts from 0
+dec_state = bytearray(1)  # Decryption state, starts from 0
 
 encrypted_data = BytesIO()  # Encrypted data buffer
 decrypted_data = BytesIO()  # Decrypted data buffer
@@ -196,6 +203,16 @@ cbc_decrypted = tgcrypto.cbc256_decrypt(cbc_encrypted, key, dec_iv)
 
 print(data == cbc_decrypted)  # True
 ```
+
+## MTProto 2.0 boundary
+
+`tgcrypto` implements only the raw AES primitives MTProto 2.0 needs
+(`AES-256-IGE` for cloud chats, `AES-256-CTR` for CDN files, `AES-256-CBC`
+for Passport). The surrounding protocol — `msg_key` derivation
+(`SHA256(authKey[88+x:88+x+32] || plaintext)[8:24]`, `x=0`/`x=8`), KDF into
+`aes_key`/`aes_iv`, padding `12..1024` bytes, `msg_id`/`seqno` checks,
+RSA/DH handshake, SRP 2FA — belongs in the client layer (e.g. Pyrogram),
+not here. `ige256_decrypt` does not verify `msg_key`; callers must.
 
 ## Testing
 

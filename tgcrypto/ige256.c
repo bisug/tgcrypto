@@ -28,6 +28,9 @@ uint8_t *ige256(const uint8_t in[], uint32_t length, const uint8_t key[32], cons
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j;
 
+    if (out == NULL)
+        return NULL;
+
     memcpy(encrypt ? iv1 : iv2, (uint8_t *) iv, AES_BLOCK_SIZE);
     memcpy(encrypt ? iv2 : iv1, (uint8_t *) iv + AES_BLOCK_SIZE, AES_BLOCK_SIZE);
     (encrypt ? aes256_set_encryption_key : aes256_set_decryption_key)(key, expandedKey);

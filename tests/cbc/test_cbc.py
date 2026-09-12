@@ -51,7 +51,7 @@ class TestCBC256NIST(unittest.TestCase):
         B2EB05E2 C39BE9FC DA6C1907 8C6A9D1B
         """.replace(" ", "").replace("\n", ""))
 
-        self.assertEqual(tgcrypto.cbc256_encrypt(plaintext, key, iv), ciphertext)
+        self.assertEqual(tgcrypto.cbc256_encrypt(plaintext, key, bytearray(iv)), ciphertext)
 
     def test_cbc256_decrypt(self):
         key = bytes.fromhex("""
@@ -77,7 +77,7 @@ class TestCBC256NIST(unittest.TestCase):
         F69F2445 DF4F9B17 AD2B417B E66C3710
         """.replace(" ", "").replace("\n", ""))
 
-        self.assertEqual(tgcrypto.cbc256_decrypt(ciphertext, key, iv), plaintext)
+        self.assertEqual(tgcrypto.cbc256_decrypt(ciphertext, key, bytearray(iv)), plaintext)
 
 
 class TestCBC256Cryptography(unittest.TestCase):
@@ -86,7 +86,7 @@ class TestCBC256Cryptography(unittest.TestCase):
     TEMPLATE = """
     def test_cbc256_{mode}_{name}_{count}(self):
         key = bytes.fromhex("{key}")
-        iv = bytes.fromhex("{iv}")
+        iv = bytearray.fromhex("{iv}")
         plaintext = bytes.fromhex("{plaintext}")
         ciphertext = bytes.fromhex("{ciphertext}")
     

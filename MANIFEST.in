@@ -1,3 +1,3 @@
 ## Include
-include COPYING COPYING.lesser NOTICE
+include COPYING COPYING.lesser NOTICE tgcrypto.pyi
 recursive-include tgcrypto *.c *.h
