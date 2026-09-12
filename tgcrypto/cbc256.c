@@ -21,14 +21,11 @@
 #include "aes256.h"
 #include "aesni.h"
 
-uint8_t *cbc256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint8_t iv[16], uint8_t encrypt) {
-    uint8_t *out = (uint8_t *) malloc(length * sizeof(uint8_t));
+void cbc256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t key[32], uint8_t iv[16],
+            uint8_t encrypt) {
     uint8_t nextIv[AES_BLOCK_SIZE];
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j;
-
-    if (out == NULL)
-        return NULL;
 
     memcpy(out, in, length);
 
@@ -68,7 +65,10 @@ uint8_t *cbc256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint
 
         _mm_storeu_si128((__m128i *) iv, ivm);
 
-        return out;
+        tgcrypto_wipe(roundKeys, sizeof(roundKeys));
+        tgcrypto_wipe(expandedKey, sizeof(expandedKey));
+
+        return;
     }
 #endif
 
@@ -96,5 +96,6 @@ uint8_t *cbc256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint
         }
     }
 
-    return out;
+    tgcrypto_wipe(nextIv, sizeof(nextIv));
+    tgcrypto_wipe(expandedKey, sizeof(expandedKey));
 }

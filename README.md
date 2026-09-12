@@ -43,6 +43,18 @@ To build without the hardware acceleration path, define `TGCRYPTO_NO_AESNI`:
 $ CFLAGS="-DTGCRYPTO_NO_AESNI" pip3 install git+https://github.com/bisug/tgcrypto
 ```
 
+For a maximum-speed local build (GCC/Clang only), opt in to heavier
+optimization — kept out of the default build so the MSVC Windows wheels keep
+working:
+
+``` bash
+$ CFLAGS="-O3 -flto" pip3 install git+https://github.com/bisug/tgcrypto
+```
+
+Note the portable table-based AES implementation is functionally correct but
+not hardened against cache-timing side channels; the AES-NI path
+(constant-time instructions, used automatically when available) is preferred.
+
 ## Comparison with the original
 
 | | Original ([pyrogram/tgcrypto](https://github.com/pyrogram/tgcrypto)) | This fork |
@@ -116,6 +128,10 @@ print(data == ige_decrypted)  # True
 ```
     
 ### CTR Mode (single chunk)
+
+Prefer chunk sizes up to ~1 MiB for large inputs: peak transient memory is
+about 1x the chunk size (the output buffer), and chunking keeps streaming
+state (`iv`, `state`) moving as documented above.
 
 ``` python
 import os

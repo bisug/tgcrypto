@@ -54,6 +54,9 @@ Source = "https://github.com/pyrogram/tgcrypto"
 # the ``tgcrypto/`` source directory only contains the C sources and headers.
 packages = []
 ext-modules = [
+    # NOTE: no extra-compile-args here on purpose. Flags like -O3/-flto are
+    # GCC/Clang-only and would break the MSVC Windows wheel build. Pass them
+    # via CFLAGS for opt-in local builds instead (see README).
     { name = "tgcrypto", sources = [
         "tgcrypto/tgcrypto.c",
         "tgcrypto/aes256.c",

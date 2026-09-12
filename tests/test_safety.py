@@ -161,6 +161,39 @@ class TestIGEKnownAnswer(unittest.TestCase):
         self.assertEqual(tgcrypto.ige256_decrypt(ct, key, iv), zeros)
 
 
+class TestEdgeLengths(unittest.TestCase):
+    # Lock in the CTR counter/state arithmetic around block and unroll
+    # boundaries (single-byte, exact blocks, 4x-unroll edges, odd tails).
+    LENGTHS = [1, 2, 15, 16, 17, 31, 32, 33, 63, 64, 65, 100, 127, 128, 129,
+               1000, 1024, 1025]
+
+    def test_ctr_edge_lengths_roundtrip_all_states(self):
+        key = os.urandom(32)
+        for n in self.LENGTHS:
+            for s in (0, 1, 7, 15):
+                data = os.urandom(n)
+                iv0 = os.urandom(16)
+                enc_iv, dec_iv = bytearray(iv0), bytearray(iv0)
+                enc_state, dec_state = bytearray([s]), bytearray([s])
+                ct = tgcrypto.ctr256_encrypt(data, key, enc_iv, enc_state)
+                self.assertEqual(
+                    tgcrypto.ctr256_decrypt(ct, key, dec_iv, dec_state), data)
+
+    def test_ige_cbc_edge_block_counts(self):
+        key = os.urandom(32)
+        for blocks in (1, 2, 3, 4, 5, 63, 64, 65):
+            n = blocks * 16
+            data = os.urandom(n)
+            iv32 = os.urandom(32)
+            self.assertEqual(
+                tgcrypto.ige256_decrypt(
+                    tgcrypto.ige256_encrypt(data, key, iv32), key, iv32), data)
+            start = os.urandom(16)
+            ct = tgcrypto.cbc256_encrypt(data, key, bytearray(start))
+            self.assertEqual(
+                tgcrypto.cbc256_decrypt(ct, key, bytearray(start)), data)
+
+
 class TestModuleMetadata(unittest.TestCase):
     def test_version_matches(self):
         self.assertEqual(tgcrypto.__version__, "1.2.5")

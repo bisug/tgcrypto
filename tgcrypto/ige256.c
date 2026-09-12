@@ -21,15 +21,12 @@
 #include "aes256.h"
 #include "aesni.h"
 
-uint8_t *ige256(const uint8_t in[], uint32_t length, const uint8_t key[32], const uint8_t iv[32], uint8_t encrypt) {
-    uint8_t *out = (uint8_t *) malloc(length * sizeof(uint8_t));
+void ige256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t key[32], const uint8_t iv[32],
+            uint8_t encrypt) {
     uint8_t iv1[AES_BLOCK_SIZE], iv2[AES_BLOCK_SIZE];
     uint8_t chunk[AES_BLOCK_SIZE], buffer[AES_BLOCK_SIZE];
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j;
-
-    if (out == NULL)
-        return NULL;
 
     memcpy(encrypt ? iv1 : iv2, (uint8_t *) iv, AES_BLOCK_SIZE);
     memcpy(encrypt ? iv2 : iv1, (uint8_t *) iv + AES_BLOCK_SIZE, AES_BLOCK_SIZE);
@@ -66,7 +63,12 @@ uint8_t *ige256(const uint8_t in[], uint32_t length, const uint8_t key[32], cons
             }
         }
 
-        return out;
+        tgcrypto_wipe(roundKeys, sizeof(roundKeys));
+        tgcrypto_wipe(iv1, sizeof(iv1));
+        tgcrypto_wipe(iv2, sizeof(iv2));
+        tgcrypto_wipe(expandedKey, sizeof(expandedKey));
+
+        return;
     }
 #endif
 
@@ -85,5 +87,9 @@ uint8_t *ige256(const uint8_t in[], uint32_t length, const uint8_t key[32], cons
         memcpy(iv2, chunk, AES_BLOCK_SIZE);
     }
 
-    return out;
+    tgcrypto_wipe(iv1, sizeof(iv1));
+    tgcrypto_wipe(iv2, sizeof(iv2));
+    tgcrypto_wipe(chunk, sizeof(chunk));
+    tgcrypto_wipe(buffer, sizeof(buffer));
+    tgcrypto_wipe(expandedKey, sizeof(expandedKey));
 }

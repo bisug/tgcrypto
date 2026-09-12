@@ -23,14 +23,11 @@
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-uint8_t *ctr256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint8_t iv[16], uint8_t *state) {
-    uint8_t *out = (uint8_t *) malloc(length * sizeof(uint8_t));
+void ctr256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t key[32], uint8_t iv[16],
+            uint8_t *state) {
     uint8_t chunk[AES_BLOCK_SIZE];
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j, k;
-
-    if (out == NULL)
-        return NULL;
 
     memcpy(out, in, length);
     aes256_set_encryption_key(key, expandedKey);
@@ -124,9 +121,14 @@ uint8_t *ctr256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint
                     _mm_storeu_si128((__m128i *) chunk, keystream);
                 }
             }
+
+            tgcrypto_wipe(chunk, sizeof(chunk));
         }
 
-        return out;
+        tgcrypto_wipe(roundKeys, sizeof(roundKeys));
+        tgcrypto_wipe(expandedKey, sizeof(expandedKey));
+
+        return;
     }
 #endif
 
@@ -149,5 +151,6 @@ uint8_t *ctr256(const uint8_t in[], uint32_t length, const uint8_t key[32], uint
             }
         }
 
-    return out;
+    tgcrypto_wipe(chunk, sizeof(chunk));
+    tgcrypto_wipe(expandedKey, sizeof(expandedKey));
 }

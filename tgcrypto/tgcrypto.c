@@ -51,7 +51,6 @@ static void release4(Py_buffer *a, Py_buffer *b, Py_buffer *c, Py_buffer *d) {
 
 static PyObject *ige(PyObject *args, uint8_t encrypt) {
     Py_buffer data, key, iv;
-    uint8_t *buf;
     PyObject *out;
     Py_ssize_t n;
 
@@ -90,20 +89,18 @@ static PyObject *ige(PyObject *args, uint8_t encrypt) {
 
     /* IGE copies the IV into local state, so read-only buffers are fine. */
     n = data.len;
+    out = PyBytes_FromStringAndSize(NULL, n);
 
-    Py_BEGIN_ALLOW_THREADS
-        buf = ige256(data.buf, (uint32_t) n, key.buf, iv.buf, encrypt);
-    Py_END_ALLOW_THREADS
-
-    release3(&data, &key, &iv);
-
-    if (buf == NULL) {
-        PyErr_NoMemory();
+    if (out == NULL) {
+        release3(&data, &key, &iv);
         return NULL;
     }
 
-    out = Py_BuildValue("y#", buf, n);
-    free(buf);
+    Py_BEGIN_ALLOW_THREADS
+        ige256(data.buf, (uint8_t *) PyBytes_AS_STRING(out), (uint32_t) n, key.buf, iv.buf, encrypt);
+    Py_END_ALLOW_THREADS
+
+    release3(&data, &key, &iv);
 
     return out;
 }
@@ -118,7 +115,6 @@ static PyObject *ige256_decrypt(PyObject *self, PyObject *args) {
 
 static PyObject *ctr(PyObject *args) {
     Py_buffer data, key, iv, state;
-    uint8_t *buf;
     PyObject *out;
     Py_ssize_t n;
 
@@ -173,20 +169,18 @@ static PyObject *ctr(PyObject *args) {
     }
 
     n = data.len;
+    out = PyBytes_FromStringAndSize(NULL, n);
 
-    Py_BEGIN_ALLOW_THREADS
-        buf = ctr256(data.buf, (uint32_t) n, key.buf, iv.buf, state.buf);
-    Py_END_ALLOW_THREADS
-
-    release4(&data, &key, &iv, &state);
-
-    if (buf == NULL) {
-        PyErr_NoMemory();
+    if (out == NULL) {
+        release4(&data, &key, &iv, &state);
         return NULL;
     }
 
-    out = Py_BuildValue("y#", buf, n);
-    free(buf);
+    Py_BEGIN_ALLOW_THREADS
+        ctr256(data.buf, (uint8_t *) PyBytes_AS_STRING(out), (uint32_t) n, key.buf, iv.buf, state.buf);
+    Py_END_ALLOW_THREADS
+
+    release4(&data, &key, &iv, &state);
 
     return out;
 }
@@ -202,7 +196,6 @@ static PyObject *ctr256_decrypt(PyObject *self, PyObject *args) {
 
 static PyObject *cbc(PyObject *args, uint8_t encrypt) {
     Py_buffer data, key, iv;
-    uint8_t *buf;
     PyObject *out;
     Py_ssize_t n;
 
@@ -250,20 +243,18 @@ static PyObject *cbc(PyObject *args, uint8_t encrypt) {
     }
 
     n = data.len;
+    out = PyBytes_FromStringAndSize(NULL, n);
 
-    Py_BEGIN_ALLOW_THREADS
-        buf = cbc256(data.buf, (uint32_t) n, key.buf, iv.buf, encrypt);
-    Py_END_ALLOW_THREADS
-
-    release3(&data, &key, &iv);
-
-    if (buf == NULL) {
-        PyErr_NoMemory();
+    if (out == NULL) {
+        release3(&data, &key, &iv);
         return NULL;
     }
 
-    out = Py_BuildValue("y#", buf, n);
-    free(buf);
+    Py_BEGIN_ALLOW_THREADS
+        cbc256(data.buf, (uint8_t *) PyBytes_AS_STRING(out), (uint32_t) n, key.buf, iv.buf, encrypt);
+    Py_END_ALLOW_THREADS
+
+    release3(&data, &key, &iv);
 
     return out;
 }

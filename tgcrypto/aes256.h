@@ -36,4 +36,15 @@ void aes256_encrypt(const uint8_t in[16], uint8_t out[16], const uint32_t expand
 
 void aes256_decrypt(const uint8_t in[16], uint8_t out[16], const uint32_t expandedKey[60]);
 
+/*
+ * Best-effort memory wipe for key material. Written through a volatile
+ * pointer so the compiler cannot optimize the wipe away.
+ */
+static inline void tgcrypto_wipe(void *p, size_t n) {
+    volatile uint8_t *v = (volatile uint8_t *) p;
+
+    while (n--)
+        *v++ = 0;
+}
+
 #endif  // AES256_H
