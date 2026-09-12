@@ -1,3 +1,66 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "tgcrypto"
+version = "1.2.5"
+description = "Fast and Portable Cryptography Extension Library for Pyrogram"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "LGPL-3.0-or-later"
+license-files = ["COPYING", "COPYING.lesser", "NOTICE"]
+authors = [
+    { name = "Dan", email = "dan@pyrogram.org" }
+]
+keywords = [
+    "pyrogram", "telegram", "crypto", "cryptography", "encryption",
+    "mtproto", "extension", "library", "aes"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: C",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Security",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Internet",
+    "Topic :: Communications",
+    "Topic :: Communications :: Chat",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[project.urls]
+Homepage = "https://github.com/pyrogram/tgcrypto"
+Documentation = "https://docs.pyrogram.org"
+Tracker = "https://github.com/pyrogram/tgcrypto/issues"
+Community = "https://t.me/pyrogram"
+Source = "https://github.com/pyrogram/tgcrypto"
+
+[tool.setuptools]
+# The distribution ships a single top-level compiled extension module named
+# ``tgcrypto`` (defined below). There are no pure-Python packages to include:
+# the ``tgcrypto/`` source directory only contains the C sources and headers.
+packages = []
+ext-modules = [
+    { name = "tgcrypto", sources = [
+        "tgcrypto/tgcrypto.c",
+        "tgcrypto/aes256.c",
+        "tgcrypto/ige256.c",
+        "tgcrypto/ctr256.c",
+        "tgcrypto/cbc256.c"
+    ] }
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
