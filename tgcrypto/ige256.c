@@ -19,6 +19,7 @@
  */
 
 #include "aes256.h"
+#include "aesni.h"
 
 uint8_t *ige256(const uint8_t in[], uint32_t length, const uint8_t key[32], const uint8_t iv[32], uint8_t encrypt) {
     uint8_t *out = (uint8_t *) malloc(length * sizeof(uint8_t));
@@ -30,6 +31,41 @@ uint8_t *ige256(const uint8_t in[], uint32_t length, const uint8_t key[32], cons
     memcpy(encrypt ? iv1 : iv2, (uint8_t *) iv, AES_BLOCK_SIZE);
     memcpy(encrypt ? iv2 : iv1, (uint8_t *) iv + AES_BLOCK_SIZE, AES_BLOCK_SIZE);
     (encrypt ? aes256_set_encryption_key : aes256_set_decryption_key)(key, expandedKey);
+
+#if TGCRYPTO_AESNI
+    if (tgcrypto_aesni_available()) {
+        __m128i roundKeys[15];
+        __m128i x, iv1m, iv2m, t;
+
+        tgcrypto_aesni_load_round_keys(expandedKey, roundKeys);
+        iv1m = _mm_loadu_si128((const __m128i *) iv1);
+        iv2m = _mm_loadu_si128((const __m128i *) iv2);
+
+        if (encrypt) {
+            for (i = 0; i < length; i += AES_BLOCK_SIZE) {
+                x = _mm_loadu_si128((const __m128i *) &in[i]);
+                t = _mm_xor_si128(x, iv1m);
+                t = tgcrypto_aesni_encrypt_block(t, roundKeys);
+                t = _mm_xor_si128(t, iv2m);
+                _mm_storeu_si128((__m128i *) &out[i], t);
+                iv1m = t;
+                iv2m = x;
+            }
+        } else {
+            for (i = 0; i < length; i += AES_BLOCK_SIZE) {
+                x = _mm_loadu_si128((const __m128i *) &in[i]);
+                t = _mm_xor_si128(x, iv1m);
+                t = tgcrypto_aesni_decrypt_block(t, roundKeys);
+                t = _mm_xor_si128(t, iv2m);
+                _mm_storeu_si128((__m128i *) &out[i], t);
+                iv1m = t;
+                iv2m = x;
+            }
+        }
+
+        return out;
+    }
+#endif
 
     for (i = 0; i < length; i += AES_BLOCK_SIZE) {
         memcpy(chunk, &in[i], AES_BLOCK_SIZE);
