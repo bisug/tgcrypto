@@ -1,7 +1,10 @@
 # TgCrypto
 
 > [!NOTE]
-> The project is no longer maintained or supported. Thanks for appreciating it.
+> This is a maintained fork of [pyrogram/tgcrypto](https://github.com/pyrogram/tgcrypto).
+> It keeps the original API fully compatible and adds modernized packaging, support for
+> Python 3.9–3.14, and optional AES-NI hardware acceleration (see
+> [Performance](#performance)).
 
 > [!NOTE]
 > The implementations of the algorithms presented in this repository are to be considered for educational purposes only.
@@ -19,12 +22,52 @@ cryptographic algorithms Telegram requires, namely:
 ## Requirements
 
 - Python 3.9 or higher.
+- A C compiler (the extension is compiled from source).
 
 ## Installation
 
 ``` bash
-$ pip3 install -U tgcrypto
+$ pip3 install -U git+https://github.com/bisug/tgcrypto
 ```
+
+## Performance
+
+On x86/x86-64 CPUs with AES-NI support, the library automatically uses
+hardware-accelerated AES instructions, detected once at runtime. On every other
+platform (or CPU without AES-NI) it falls back to the portable software
+implementation. Both paths produce bit-for-bit identical output.
+
+To build without the hardware acceleration path, define `TGCRYPTO_NO_AESNI`:
+
+``` bash
+$ CFLAGS="-DTGCRYPTO_NO_AESNI" pip3 install git+https://github.com/bisug/tgcrypto
+```
+
+## Comparison with the original
+
+| | Original ([pyrogram/tgcrypto](https://github.com/pyrogram/tgcrypto)) | This fork |
+|---|---|---|
+| Status | Unmaintained | Actively maintained |
+| Python support | 3.7 – 3.11 | **3.9 – 3.14** |
+| Packaging | `setup.py` | `pyproject.toml` (PEP 621) |
+| AES acceleration | Portable software implementation only | **AES-NI hardware acceleration** (runtime-detected) with software fallback |
+| Speed on AES-NI CPUs | Baseline | ~**4–6× faster** for IGE/CTR on large buffers |
+| Speed without AES-NI / non-x86 | — | Identical (same software code path, bit-for-bit) |
+| Output compatibility | — | Cryptographic output is **bit-for-bit identical** to the original |
+| API | Six functions | **Unchanged** — drop-in compatible |
+| CI | — | Test matrix 3.9–3.14; wheels built for Linux (x86_64, ARM64), macOS (Intel, Apple Silicon) and Windows |
+| License | LGPLv3+ | LGPLv3+ |
+
+Indicative benchmark (AES-NI, 16 MB buffers, best of 5):
+
+| Operation | Original | This fork |
+|---|---|---|
+| AES-256-IGE encrypt | 59 MB/s | 247 MB/s |
+| AES-256-CTR encrypt | 46 MB/s | 284 MB/s |
+
+Actual gains scale with CPU speed. On CPUs without AES-NI (or when built with
+`TGCRYPTO_NO_AESNI`), performance matches the original exactly, since the same
+software code path is used.
 
 ## API
 
@@ -156,7 +199,7 @@ print(data == cbc_decrypted)  # True
 
 ## Testing
 
-1. Clone this repository: `git clone https://github.com/pyrogram/tgcrypto`.
+1. Clone this repository: `git clone https://github.com/bisug/tgcrypto`.
 2. Enter the directory: `cd tgcrypto`.
 3. Install `pytest`: `pip3 install pytest`
 4. Run tests: `pytest`.
@@ -164,3 +207,5 @@ print(data == cbc_decrypted)  # True
 ## License
 
 [LGPLv3+](COPYING.lesser) © 2017-present [Dan](https://github.com/delivrance)
+
+Modifications in this fork are released under the same license.
