@@ -18,7 +18,7 @@ cryptographic algorithms Telegram requires, namely:
 
 ## Requirements
 
-- Python 3.7 or higher.
+- Python 3.9 or higher.
 
 ## Installation
 
@@ -158,8 +158,8 @@ print(data == cbc_decrypted)  # True
 
 1. Clone this repository: `git clone https://github.com/pyrogram/tgcrypto`.
 2. Enter the directory: `cd tgcrypto`.
-3. Install `tox`: `pip3 install tox`
-4. Run tests: `tox`.
+3. Install `pytest`: `pip3 install pytest`
+4. Run tests: `pytest`.
 
 ## License
 
