@@ -106,9 +106,10 @@ copy changes (same machine, alternating runs, best of 2 rounds, MB/s):
 IGE on large buffers is deliberately unchanged: with a serial feedback chain
 each block depends on the previous one, so the mode is bound by AES round
 latency rather than throughput and no amount of key-schedule tuning helps.
-For bulk MTProto traffic (which is IGE) that is the ceiling on this class of
-CPU — the AES-NI path is already within ~2x of OpenSSL's raw AES-CTR while
-also doing the IGE chaining.
+Because MTProto 2.0 derives the AES key from the auth key and the per-message
+`msg_key`, the key schedule has to be paid on every message and cannot be
+cached across calls — making it cheap is what pays off for real traffic,
+rather than leaving it as table lookups on that critical path.
 
 ## Comparison with the original
 
