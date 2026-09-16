@@ -27,17 +27,15 @@ void cbc256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j;
 
-    memcpy(out, in, length);
-
+    /* The AES-NI path reads the input directly and builds its round keys with
+     * AES instructions; the software path below copies in -> out first and
+     * needs the table-based expanded key. */
 #if TGCRYPTO_AESNI
     if (tgcrypto_aesni_available()) {
         __m128i roundKeys[15];
         __m128i ivm, next, t;
 
-        if (encrypt)
-            aes256_set_encryption_key(key, expandedKey);
-        else
-            aes256_set_decryption_key(key, expandedKey);
+        tgcrypto_aesni_expand_key(key, expandedKey, (uint8_t) (encrypt ? 0 : 1));
 
         tgcrypto_aesni_load_round_keys(expandedKey, roundKeys);
 
@@ -45,7 +43,7 @@ void cbc256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
             ivm = _mm_loadu_si128((const __m128i *) iv);
 
             for (i = 0; i < length; i += AES_BLOCK_SIZE) {
-                t = _mm_loadu_si128((const __m128i *) &out[i]);
+                t = _mm_loadu_si128((const __m128i *) &in[i]);
                 t = _mm_xor_si128(t, ivm);
                 t = tgcrypto_aesni_encrypt_block(t, roundKeys);
                 _mm_storeu_si128((__m128i *) &out[i], t);
@@ -55,7 +53,7 @@ void cbc256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
             ivm = _mm_loadu_si128((const __m128i *) iv);
 
             for (i = 0; i < length; i += AES_BLOCK_SIZE) {
-                next = _mm_loadu_si128((const __m128i *) &out[i]);
+                next = _mm_loadu_si128((const __m128i *) &in[i]);
                 t = tgcrypto_aesni_decrypt_block(next, roundKeys);
                 t = _mm_xor_si128(t, ivm);
                 _mm_storeu_si128((__m128i *) &out[i], t);
@@ -71,6 +69,11 @@ void cbc256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
         return;
     }
 #endif
+
+    /* The software path operates in place on out, so the input has to be
+     * copied first. The AES-NI path above reads in directly and returns
+     * before reaching this point, so it never pays for this copy. */
+    memcpy(out, in, length);
 
     if (encrypt) {
         aes256_set_encryption_key(key, expandedKey);

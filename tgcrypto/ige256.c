@@ -30,7 +30,13 @@ void ige256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
 
     memcpy(encrypt ? iv1 : iv2, (uint8_t *) iv, AES_BLOCK_SIZE);
     memcpy(encrypt ? iv2 : iv1, (uint8_t *) iv + AES_BLOCK_SIZE, AES_BLOCK_SIZE);
-    (encrypt ? aes256_set_encryption_key : aes256_set_decryption_key)(key, expandedKey);
+
+#if TGCRYPTO_AESNI
+    if (tgcrypto_aesni_available())
+        tgcrypto_aesni_expand_key(key, expandedKey, (uint8_t) (encrypt ? 0 : 1));
+    else
+#endif
+        (encrypt ? aes256_set_encryption_key : aes256_set_decryption_key)(key, expandedKey);
 
 #if TGCRYPTO_AESNI
     if (tgcrypto_aesni_available()) {

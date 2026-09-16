@@ -58,15 +58,24 @@ not hardened against cache-timing side channels; the AES-NI path
 Per-call overhead matters as much as bulk throughput: MTProto encrypts many
 small messages (a 16-byte payload is a single AES block), so the fixed cost of
 every call — argument handling, key schedule and the key-material wipe —
-dominates at that size. The key material wiped on each call (the expanded key
-and the loaded round keys, ~500 bytes) is cleared with word-wide stores, which
-is ~8x cheaper than a byte-wise volatile loop while giving exactly the same
-guarantee.
+dominates at that size. Two further optimizations target that fixed cost:
+
+* **Key-material wipe** (expanded key plus loaded round keys, ~500 bytes per
+  call) is cleared with word-wide stores instead of a byte-wise volatile loop,
+  which is ~8x cheaper while giving exactly the same guarantee.
+* **Key schedule** — on the AES-NI path the 60-word expanded key is generated
+  with `aeskeygenassist`/`aesimc` instructions instead of the table-based
+  scalar routine, and the round keys are consumed directly from it. The scalar
+  schedule cost ~445 ns per call (encrypt) and ~630 ns (decrypt) on the
+  reference machine; the instruction-based one is a small fraction of that.
+* **No redundant copy** — the AES-NI paths read the input buffer directly
+  instead of first copying it into the output buffer, so large payloads are
+  touched once rather than twice.
 
 Indicative, on a low-power Celeron N4120 with the AES-NI path active (best of
 5, one C call, so no Python overhead included):
 
-| Operation | Byte-wise wipe | Word-wise wipe |
+| Operation | Before | After |
 |---|---|---|
 | AES-256-IGE encrypt, 16 B | 1742 ns | **984 ns** |
 | AES-256-IGE decrypt, 16 B | 1407 ns | **559 ns** |
@@ -76,6 +85,30 @@ Indicative, on a low-power Celeron N4120 with the AES-NI path active (best of
 The gain is per call, so it is largest for small messages (1.8–3x at a single
 block) and tapers off for large buffers (about 1.3–1.5x at 1 KiB), where AES
 throughput dominates instead.
+
+Measured throughput of the Python API before/after the key-schedule and
+copy changes (same machine, alternating runs, best of 2 rounds, MB/s):
+
+| Operation | Size | Before | After | Change |
+|---|---|---|---|---|
+| IGE encrypt | 16 B | 10 | 14 | +30% |
+| IGE decrypt | 16 B | 8 | 13 | +60% |
+| CBC decrypt | 16 B | 6 | 10 | +48% |
+| CBC encrypt | 16 B | 8 | 10 | +20% |
+| CTR encrypt | 16 B | 7 | 8 | +21% |
+| CBC decrypt | 1 KiB | 233 | 294 | +26% |
+| CTR encrypt | 1 KiB | 228 | 252 | +11% |
+| CBC decrypt | 1 MiB | 598 | 736 | +23% |
+| CTR encrypt | 1 MiB | 500 | 606 | +21% |
+| CBC encrypt | 1 MiB | 338 | 382 | +13% |
+| IGE encrypt/decrypt | 64 KiB – 1 MiB | 374–379 | 373–379 | ~0% |
+
+IGE on large buffers is deliberately unchanged: with a serial feedback chain
+each block depends on the previous one, so the mode is bound by AES round
+latency rather than throughput and no amount of key-schedule tuning helps.
+For bulk MTProto traffic (which is IGE) that is the ceiling on this class of
+CPU — the AES-NI path is already within ~2x of OpenSSL's raw AES-CTR while
+also doing the IGE chaining.
 
 ## Comparison with the original
 

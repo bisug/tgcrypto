@@ -29,15 +29,17 @@ void ctr256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
     uint32_t expandedKey[EXPANDED_KEY_SIZE];
     uint32_t i, j, k;
 
-    memcpy(out, in, length);
-    aes256_set_encryption_key(key, expandedKey);
-
+    /* The AES-NI path reads the input directly and builds its round keys with
+     * AES instructions; the software path below copies in -> out first and
+     * needs the table-based expanded key. */
 #if TGCRYPTO_AESNI
     if (tgcrypto_aesni_available()) {
         __m128i roundKeys[15];
         __m128i ks0, ks1, ks2, ks3, c0, c1, c2, c3, x;
         __m128i keystream;
         uint32_t processed = 0;
+
+        tgcrypto_aesni_expand_key(key, expandedKey, 0);
 
         tgcrypto_aesni_load_round_keys(expandedKey, roundKeys);
 
@@ -72,16 +74,16 @@ void ctr256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
                 ks2 = tgcrypto_aesni_encrypt_block(c2, roundKeys);
                 ks3 = tgcrypto_aesni_encrypt_block(c3, roundKeys);
 
-                x = _mm_loadu_si128((const __m128i *) &out[processed]);
+                x = _mm_loadu_si128((const __m128i *) &in[processed]);
                 _mm_storeu_si128((__m128i *) &out[processed], _mm_xor_si128(x, ks0));
 
-                x = _mm_loadu_si128((const __m128i *) &out[processed + AES_BLOCK_SIZE]);
+                x = _mm_loadu_si128((const __m128i *) &in[processed + AES_BLOCK_SIZE]);
                 _mm_storeu_si128((__m128i *) &out[processed + AES_BLOCK_SIZE], _mm_xor_si128(x, ks1));
 
-                x = _mm_loadu_si128((const __m128i *) &out[processed + 2 * AES_BLOCK_SIZE]);
+                x = _mm_loadu_si128((const __m128i *) &in[processed + 2 * AES_BLOCK_SIZE]);
                 _mm_storeu_si128((__m128i *) &out[processed + 2 * AES_BLOCK_SIZE], _mm_xor_si128(x, ks2));
 
-                x = _mm_loadu_si128((const __m128i *) &out[processed + 3 * AES_BLOCK_SIZE]);
+                x = _mm_loadu_si128((const __m128i *) &in[processed + 3 * AES_BLOCK_SIZE]);
                 _mm_storeu_si128((__m128i *) &out[processed + 3 * AES_BLOCK_SIZE], _mm_xor_si128(x, ks3));
 
                 processed += 4 * AES_BLOCK_SIZE;
@@ -90,7 +92,7 @@ void ctr256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
             while (processed + AES_BLOCK_SIZE <= length) {
                 c0 = _mm_loadu_si128((const __m128i *) iv);
                 ks0 = tgcrypto_aesni_encrypt_block(c0, roundKeys);
-                x = _mm_loadu_si128((const __m128i *) &out[processed]);
+                x = _mm_loadu_si128((const __m128i *) &in[processed]);
                 _mm_storeu_si128((__m128i *) &out[processed], _mm_xor_si128(x, ks0));
 
                 k = AES_BLOCK_SIZE;
@@ -107,7 +109,7 @@ void ctr256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
             _mm_storeu_si128((__m128i *) chunk, keystream);
 
             for (i = processed; i < length; ++i) {
-                out[i] ^= chunk[(*state)++];
+                out[i] = in[i] ^ chunk[(*state)++];
 
                 if (*state >= AES_BLOCK_SIZE) {
                     *state = 0;
@@ -132,6 +134,8 @@ void ctr256(const uint8_t in[], uint8_t out[], uint32_t length, const uint8_t ke
     }
 #endif
 
+    memcpy(out, in, length);
+    aes256_set_encryption_key(key, expandedKey);
     aes256_encrypt(iv, chunk, expandedKey);
 
     for (i = 0; i < length; i += AES_BLOCK_SIZE)
