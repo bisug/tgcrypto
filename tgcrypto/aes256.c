@@ -350,11 +350,13 @@ static const uint32_t RCON[10] = {
 };
 
 uint32_t sub_word(uint32_t word) {
+    /* The shifts are performed on unsigned values: shifting a promoted int
+     * that overflows the sign bit (e.g. 0xA4 << 24) is undefined behaviour. */
     return (
-        (SBOX[word >> 4 & 0x0f][word & 0xf])
-        + (SBOX[word >> 12 & 0x0f][word >> 8 & 0x0f] << 8)
-        + (SBOX[word >> 20 & 0x0f][word >> 16 & 0x0f] << 16)
-        + (SBOX[word >> 28 & 0x0f][word >> 24 & 0x0f] << 24)
+        (uint32_t) SBOX[word >> 4 & 0x0f][word & 0xf]
+        + ((uint32_t) SBOX[word >> 12 & 0x0f][word >> 8 & 0x0f] << 8)
+        + ((uint32_t) SBOX[word >> 20 & 0x0f][word >> 16 & 0x0f] << 16)
+        + ((uint32_t) SBOX[word >> 28 & 0x0f][word >> 24 & 0x0f] << 24)
     );
 }
 
