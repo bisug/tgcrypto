@@ -81,7 +81,9 @@ static PyObject *ige(PyObject *args, uint8_t encrypt) {
         return NULL;
     }
 
-    if (data.len > (Py_ssize_t) UINT32_MAX) {
+    /* Compare as uint64_t: casting UINT32_MAX to Py_ssize_t wraps to -1 on
+     * 32-bit platforms, which would reject every input. */
+    if ((uint64_t) data.len > (uint64_t) UINT32_MAX) {
         release3(&data, &key, &iv);
         PyErr_SetString(PyExc_ValueError, "Data is too large (max 4294967295 bytes)");
         return NULL;
@@ -162,7 +164,7 @@ static PyObject *ctr(PyObject *args) {
         return NULL;
     }
 
-    if (data.len > (Py_ssize_t) UINT32_MAX) {
+    if ((uint64_t) data.len > (uint64_t) UINT32_MAX) {
         release4(&data, &key, &iv, &state);
         PyErr_SetString(PyExc_ValueError, "Data is too large (max 4294967295 bytes)");
         return NULL;
@@ -226,7 +228,7 @@ static PyObject *cbc(PyObject *args, uint8_t encrypt) {
         return NULL;
     }
 
-    if (data.len > (Py_ssize_t) UINT32_MAX) {
+    if ((uint64_t) data.len > (uint64_t) UINT32_MAX) {
         release3(&data, &key, &iv);
         PyErr_SetString(PyExc_ValueError, "Data is too large (max 4294967295 bytes)");
         return NULL;

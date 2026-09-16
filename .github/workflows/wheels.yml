@@ -23,7 +23,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install test dependencies
-        run: python -m pip install -U pip pytest
+        run: python -m pip install -U pip pytest pycryptodome
 
       - name: Build and install in place
         run: python -m pip install .

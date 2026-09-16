@@ -124,10 +124,14 @@ class TestIGEKnownAnswer(unittest.TestCase):
     #   C = AES(P ^ IV1) ^ IV2 ; P = AES^-1(C ^ IV1) ^ IV2
     # validated here with ECB from PyCryptodome as the independent primitive.
     def test_ige_single_block_matches_ecb_construction(self):
+        # Accept either pycryptodomex (Cryptodome) or pycryptodome (Crypto).
         try:
             from Cryptodome.Cipher import AES
         except ImportError:
-            self.skipTest("pycryptodome required for IGE reference vector")
+            try:
+                from Crypto.Cipher import AES
+            except ImportError:
+                self.skipTest("pycryptodome/pycryptodomex required for IGE reference vector")
         key = bytes.fromhex(
             "000102030405060708090A0B0C0D0E0F"
             "101112131415161718191A1B1C1D1E1F"
