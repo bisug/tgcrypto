@@ -234,7 +234,9 @@ not here. `ige256_decrypt` does not verify `msg_key`; callers must.
 
 1. Clone this repository: `git clone https://github.com/bisug/tgcrypto`.
 2. Enter the directory: `cd tgcrypto`.
-3. Install `pytest`: `pip3 install pytest`
+3. Install the test dependencies: `pip3 install pytest pycryptodome cryptography`
+   (`pycryptodome`/`cryptography` are used as independent reference primitives by
+   the known-answer tests; without them those tests skip silently.)
 4. Run tests: `pytest`.
 
 ## License
