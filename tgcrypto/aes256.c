@@ -365,10 +365,13 @@ void aes256_set_encryption_key(const uint8_t key[32], uint32_t expandedKey[60]) 
 
     for (i = 0; i < Nk; ++i)
         expandedKey[i] = (
-            key[4 * i] << 24
-            | key[4 * i + 1] << 16
-            | key[4 * i + 2] << 8
-            | key[4 * i + 3]
+            /* Each byte is widened to uint32_t before shifting: shifting a
+             * promoted int that overflows the sign bit (e.g. 140 << 24) is
+             * undefined behaviour. */
+            (uint32_t) key[4 * i] << 24
+            | (uint32_t) key[4 * i + 1] << 16
+            | (uint32_t) key[4 * i + 2] << 8
+            | (uint32_t) key[4 * i + 3]
         );
 
     for (i = Nk; i < Nb * (Nr + 1); ++i) {
